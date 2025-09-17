@@ -4,7 +4,8 @@
 
 ## 项目结构
 
-![image-20210211001824317](https://gitee.com/antigenmhc/picture/raw/master/img/20210211001826.png)
+<img width="493" height="367" alt="image" src="https://github.com/user-attachments/assets/344497f8-201b-4f0c-8432-6dea17986dca" />
+
 
 
 
@@ -172,19 +173,24 @@ front 为后台，site 为 前台，分别
 
 #### admin
 
-![image-20210209144138177](https://gitee.com/antigenmhc/picture/raw/master/img/20210209144211.png)
+<img width="1922" height="948" alt="image" src="https://github.com/user-attachments/assets/693779b8-282a-4969-837d-999097c93819" />
 
-![image-20210209144202480](https://gitee.com/antigenmhc/picture/raw/master/img/20210209144216.png)
 
-![image-20210209144235932](https://gitee.com/antigenmhc/picture/raw/master/img/20210209144237.png)
+<img width="1898" height="941" alt="image" src="https://github.com/user-attachments/assets/8916cc09-7d8e-4583-a28e-ade613a5a6fd" />
+
+
+<img width="1904" height="939" alt="image" src="https://github.com/user-attachments/assets/42a637a7-bd9b-4153-872e-932f76b2cf0d" />
+
 
 
 
 #### 普通管理员
 
-![image-20210209144350629](https://gitee.com/antigenmhc/picture/raw/master/img/20210209144351.png)
+<img width="1909" height="939" alt="image" src="https://github.com/user-attachments/assets/4e508578-2467-46d2-8202-636950866303" />
 
-![image-20210209144416888](https://gitee.com/antigenmhc/picture/raw/master/img/20210209144418.png)
+
+<img width="1907" height="922" alt="image" src="https://github.com/user-attachments/assets/2bf7784f-0726-472d-b3f9-6c2f20a0961a" />
+
 
 
 
@@ -192,9 +198,11 @@ front 为后台，site 为 前台，分别
 
 ### 前台
 
-![image-20210209144633630](https://gitee.com/antigenmhc/picture/raw/master/img/20210209144635.png)
+<img width="1063" height="665" alt="image" src="https://github.com/user-attachments/assets/c7bedfc4-980d-40e5-ae6b-ee7c53244626" />
 
-![image-20210209144903689](https://gitee.com/antigenmhc/picture/raw/master/img/20210209144904.png)
+
+<img width="1876" height="879" alt="image" src="https://github.com/user-attachments/assets/9201e895-9b94-45a5-bdae-c1f95cbe2049" />
+
 
 首页进入可能较慢，因为会把数据缓存到 Redis 里
 
@@ -202,19 +210,24 @@ front 为后台，site 为 前台，分别
 
 #### 动漫
 
-![image-20210209144932368](https://gitee.com/antigenmhc/picture/raw/master/img/20210209144933.png)
+<img width="1081" height="1369" alt="image" src="https://github.com/user-attachments/assets/2cdaa391-3229-4786-b364-99cbc5b1424d" />
 
-![image-20210209145045471](https://gitee.com/antigenmhc/picture/raw/master/img/20210209145046.png)
 
-![InkedQQ图片20210402073353_LI](https://gitee.com/antigenmhc/picture/raw/master/img/20210402073632.jpg)
+<img width="1889" height="934" alt="image" src="https://github.com/user-attachments/assets/e8dc1176-a3d3-4092-9496-849c592c91f3" />
+
+
+<img width="1889" height="2467" alt="image" src="https://github.com/user-attachments/assets/b35d4ba8-9fee-4b86-be7b-58378fd41441" />
+
 
 
 
 #### 制作方
 
-![image-20210209144945351](https://gitee.com/antigenmhc/picture/raw/master/img/20210209144946.png)
+<img width="1079" height="852" alt="image" src="https://github.com/user-attachments/assets/d9626364-fe15-417a-9a04-6798149975ad" />
 
-![image-20210209145927178](https://gitee.com/antigenmhc/picture/raw/master/img/20210209145928.png)
+
+<img width="1075" height="961" alt="image" src="https://github.com/user-attachments/assets/ef76ea77-473f-4ac7-860c-d8f901a21817" />
+
 
 
 
