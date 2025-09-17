@@ -235,11 +235,11 @@ front 为后台，site 为 前台，分别
 
 #### 用户中心
 
-![image-20210209150021373](https://gitee.com/antigenmhc/picture/raw/master/img/20210209150022.png)
+<img width="1075" height="939" alt="image" src="https://github.com/user-attachments/assets/e5069888-7afa-422d-b3b6-5496bdc0c52d" />
 
-![image-20210209150044399](https://gitee.com/antigenmhc/picture/raw/master/img/20210209150045.png)
+<img width="1811" height="939" alt="image" src="https://github.com/user-attachments/assets/208f4e60-3ba4-4764-866c-5430a3d33d29" />
 
-![image-20210209150103832](https://gitee.com/antigenmhc/picture/raw/master/img/20210209150104.png)
+<img width="1729" height="900" alt="image" src="https://github.com/user-attachments/assets/5d0ae17a-1660-4b44-8ead-5c6deda71271" />
 
 
 
