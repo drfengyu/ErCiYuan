@@ -88,6 +88,8 @@ export type ListQuery = {
   title?: string;
   parentId?: string;
   categoryId?: string;
+  genre?: string;
+  year?: number;
   sort?: 'views' | 'updated' | 'episodes' | 'score';
   desc?: boolean;
   page?: number;
@@ -100,13 +102,19 @@ export async function searchAnime(q: ListQuery) {
   const size = Math.min(48, Math.max(1, Number(q.size || 12)));
 
   const filters = [eq(t.anime.published, true)];
-  if (q.title) filters.push(like(t.anime.title, `%${q.title}%`));
+  if (q.title) {
+    const keyword = `%${q.title}%`;
+    filters.push(or(like(t.anime.title, keyword), like(t.anime.enTitle, keyword), like(t.anime.titleJp, keyword))!);
+  }
   if (q.categoryId) filters.push(eq(t.anime.categoryId, q.categoryId));
   else if (q.parentId) {
     const children = await db.select().from(t.categories).where(eq(t.categories.parentId, q.parentId));
     const ids = [q.parentId, ...children.map((c) => c.id)];
     filters.push(inArray(t.anime.categoryId, ids));
   }
+  // 类型存在 JSON 文本列里，只能按 "Genre" 片段匹配；先剥掉 LIKE 通配符，避免筛选词被当模式用。
+  if (q.genre) filters.push(like(t.anime.genres, `%"${q.genre.replace(/[%_]/g, '')}"%`));
+  if (q.year) filters.push(eq(t.anime.year, q.year));
 
   const order =
     q.sort === 'updated'
@@ -122,6 +130,36 @@ export async function searchAnime(q: ListQuery) {
     db.select({ n: count() }).from(t.anime).where(and(...filters)),
   ]);
   return { items: await withRelations(rows), total: Number(totalRow[0]?.n ?? 0), page, size };
+}
+
+/** 列表页筛选条的数据源：只列出库里真实存在、且数量够多的类型与年份。 */
+export async function getAnimeFacets(minGenreCount = 3) {
+  const { db } = await getDb();
+  const rows = await db
+    .select({ genres: t.anime.genres, year: t.anime.year })
+    .from(t.anime)
+    .where(eq(t.anime.published, true));
+
+  const genreCount = new Map<string, number>();
+  const yearCount = new Map<number, number>();
+  for (const row of rows) {
+    for (const genre of parseJson<string[]>(row.genres, [])) {
+      genreCount.set(genre, (genreCount.get(genre) ?? 0) + 1);
+    }
+    if (row.year > 0) yearCount.set(row.year, (yearCount.get(row.year) ?? 0) + 1);
+  }
+
+  const genres = [...genreCount.entries()]
+    .filter(([, n]) => n >= minGenreCount)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 18)
+    .map(([name, n]) => ({ name, n }));
+  const years = [...yearCount.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .slice(0, 12)
+    .map(([year]) => year);
+
+  return { genres, years };
 }
 
 export async function suggestTitles(keyword: string, limit = 8) {
@@ -302,4 +340,22 @@ export async function findUserByMobile(mobile: string): Promise<User | undefined
   const { db } = await getDb();
   const [row] = await db.select().from(t.users).where(eq(t.users.mobile, mobile)).limit(1);
   return row;
+}
+
+/** sitemap.xml 的数据源，只收公开条目，并限制总量避免生成超大文件。 */
+export async function getSitemapEntries(limit = 1000) {
+  const { db } = await getDb();
+  const [animeRows, makerRows] = await Promise.all([
+    db
+      .select({ id: t.anime.id, updatedAt: t.anime.updatedAt })
+      .from(t.anime)
+      .where(eq(t.anime.published, true))
+      .orderBy(desc(t.anime.updatedAt))
+      .limit(limit),
+    db.select({ id: t.makers.id }).from(t.makers).limit(limit),
+  ]);
+  return {
+    anime: animeRows.map((row) => ({ id: row.id, updatedAt: row.updatedAt })),
+    makers: makerRows.map((row) => row.id),
+  };
 }

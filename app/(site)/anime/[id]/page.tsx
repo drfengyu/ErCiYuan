@@ -8,6 +8,7 @@ import MakerPic from '@/components/site/MakerPic';
 import TrailerEmbed from '@/components/site/TrailerEmbed';
 import { getCurrentUser } from '@/lib/auth';
 import { formatCount, formatMoney } from '@/lib/format';
+import { genreLabel } from '@/lib/genres';
 import { findAnime, getAnimeDetail, getNestedCategories, hasBought, isFavorite } from '@/lib/queries';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -181,9 +182,14 @@ export default async function AnimeDetailPage({ params }: { params: Promise<{ id
                     {anime.genresList.length > 0 && (
                       <p className="mt10">
                         {anime.genresList.map((genre) => (
-                          <span key={genre} className="list-tag" style={{ marginRight: 6 }}>
-                            {genre}
-                          </span>
+                          <Link
+                            key={genre}
+                            href={`/anime?genre=${encodeURIComponent(genre)}`}
+                            className="list-tag"
+                            style={{ marginRight: 6 }}
+                          >
+                            {genreLabel(genre)}
+                          </Link>
                         ))}
                       </p>
                     )}

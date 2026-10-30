@@ -57,10 +57,14 @@ app/
   (auth)/        /login、/register（沿用原站 sign.css 视觉）
   admin/         后台：概览、AniList 导入、各资源 CRUD
   api/           REST 接口（auth / favorites / comments / orders / views / anilist / admin）
+  sitemap.ts     /sitemap.xml（公开条目 + lastModified，每小时重新验证）
+  robots.ts      /robots.txt（屏蔽 /admin /ucenter /order /api）
 components/      site 与 admin 组件
-lib/             db(schema/ddl/seed)、queries、auth、anilist、bangumi、admin-resources
+lib/             db(schema/ddl/seed)、queries、auth、anilist、bangumi、admin-resources、site、genres
 public/assets/   原站 CSS / 图片 / 字体（保持原有视觉）
 ```
+
+`/anime` 列表页支持关键词（译名 / 日文名 / 英文原名）、分类、类型、年份筛选与四种排序，筛选候选值取自库里真实存在的条目。
 
 后台的增删改查由 `lib/admin-resources.ts` 的资源表驱动（anime / chapters / videos / categories / makers / ads / comments / orders / users），
 统一走 `/api/admin/[resource]`，字段用 zod 校验、按列白名单写入，删除动漫会级联清理章节、剧集、评论、收藏与订单。

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/site';
 import './globals.css';
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://erciyuan-seven.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -10,6 +9,7 @@ export const metadata: Metadata = {
     template: '%s · 二刺螈',
   },
   description: 'Next.js + Vercel 重构版二次元视频站：番剧、制作方、播放、订单与后台管理，元数据对接 AniList / Bangumi。',
+  robots: { index: true, follow: true },
   openGraph: {
     type: 'website',
     siteName: '二刺螈 ErCiYuan',
