@@ -5,9 +5,14 @@ export const AUTH_COOKIE = 'token';
 export type Role = 'ADMIN' | 'MEMBER';
 export type Session = { userId: string; role: Role };
 
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET || 'erciyuan-dev-secret-change-me-in-production',
-);
+const AUTH_SECRET = process.env.AUTH_SECRET;
+
+// 部署到 Vercel 却没配密钥时必须直接失败：占位密钥写在公开源码里，任何人可伪造管理员 token。
+if (!AUTH_SECRET && process.env.VERCEL === '1' && process.env.NODE_ENV === 'production') {
+  throw new Error('缺少环境变量 AUTH_SECRET，请在 Vercel 项目环境变量中配置后重新部署。');
+}
+
+const secret = new TextEncoder().encode(AUTH_SECRET || 'erciyuan-dev-secret-change-me-in-production');
 
 export async function createSessionToken(userId: string, role: Role): Promise<string> {
   return new SignJWT({ role })
