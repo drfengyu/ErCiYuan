@@ -2,7 +2,8 @@ import { sql } from 'drizzle-orm';
 import type { LibSQLDatabase } from 'drizzle-orm/libsql';
 import bcrypt from 'bcryptjs';
 import * as schema from './schema';
-import { demoComments, seedAds, seedAnime, seedCategories, seedMakers, type SeedVideo } from './seed-data';
+import { trailerEmbed } from '../media';
+import { demoComments, seedAds, seedAnime, seedCategories, seedMakers } from './seed-data';
 
 type Db = LibSQLDatabase<typeof schema>;
 
@@ -85,12 +86,21 @@ export async function seedIfEmpty(db: Db): Promise<boolean> {
     })),
   );
 
-  const videoRows: (SeedVideo & { animeId: string; chapterId: string; playCount: number })[] = [];
-  for (const a of seedAnime) {
-    for (const v of a.videos) {
-      videoRows.push({ ...v, animeId: a.id, chapterId: `${a.id}-c1`, playCount: Math.floor(a.viewCount / 8) });
-    }
-  }
+  // 每部番只放它自己的官方预告（AniList trailer），不再塞无关的公开测试流；
+  // 付费番的预告位同样需要购买，保留购买链路的演示。
+  const videoRows = seedAnime
+    .filter((a) => a.trailer)
+    .map((a) => ({
+      id: `${a.id}-v1`,
+      animeId: a.id,
+      chapterId: `${a.id}-c1`,
+      title: '官方预告 / PV',
+      sourceUrl: trailerEmbed('youtube', a.trailer),
+      duration: 0,
+      isFree: a.price <= 0,
+      sort: 0,
+      playCount: Math.floor(a.viewCount / 8),
+    }));
   for (const part of chunks(videoRows, 40)) {
     await db.insert(schema.videos).values(part);
   }

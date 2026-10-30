@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { fail, ok, requireApiAdmin } from '@/lib/api';
-import { findResource, firstIssue, normalizeValues, pkOf, type ResourceDef } from '@/lib/admin-resources';
+import { findResource, firstIssue, normalizeValues, pkOf, sanitizeRow, type ResourceDef } from '@/lib/admin-resources';
 import { getDb } from '@/lib/db';
 import * as t from '@/lib/db/schema';
 
@@ -38,7 +38,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ resource: strin
   await db.update(resource.table).set(values).where(eq(pk, id));
 
   const [updated] = await db.select().from(resource.table).where(eq(pk, id)).limit(1);
-  return ok({ item: updated }, '保存成功');
+  return ok({ item: sanitizeRow(updated as Record<string, unknown>) }, '保存成功');
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ resource: string; id: string }> }) {

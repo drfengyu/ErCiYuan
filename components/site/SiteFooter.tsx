@@ -34,7 +34,7 @@ export default function SiteFooter() {
                 <a href="https://github.com/drfengyu/ErCiYuan" target="_blank" rel="noreferrer">
                   关于我们
                 </a>
-                |<span>数据来源：AniList / Bangumi 公开接口，播放片段为开源可商用演示视频</span>
+                |<span>数据来源：AniList / Bangumi 公开接口，播放内容为各作品官方预告或已授权正版源</span>
               </section>
               <section className="b-f-link mt10">
                 <span>©20XX-2077 二刺螈 · Next.js on Vercel</span>

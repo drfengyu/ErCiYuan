@@ -95,7 +95,7 @@ export default function AnilistImport({ categories }: { categories: { id: string
           </select>
         </label>
         <label className="block">
-          <span className="admin-label">生成演示剧集数</span>
+          <span className="admin-label">生成官方预告资源位（0 为不生成）</span>
           <input className="admin-input w-24" type="number" min={0} max={48} value={episodeCount} onChange={(e) => setEpisodeCount(Number(e.target.value))} />
         </label>
         <label className="block">

@@ -33,6 +33,9 @@ export type ResourceDef = {
 
 export type ResourceKey = 'anime' | 'chapters' | 'videos' | 'categories' | 'makers' | 'ads' | 'comments' | 'orders' | 'users';
 
+/** 永远不出现在列表/详情响应里，也不接受作为过滤条件的列。 */
+const SECRET_COLUMNS = new Set(['password']);
+
 const idField = z.string().min(1).max(64);
 const idOrEmpty = z.string().max(64).default('');
 
@@ -223,7 +226,7 @@ export const RESOURCES: Record<ResourceKey, ResourceDef> = {
       { key: 'animeId', label: '动漫 ID', type: 'text', list: true },
       { key: 'chapterId', label: '章节 ID', type: 'text', list: true },
       { key: 'title', label: '剧集名', type: 'text', list: true },
-      { key: 'sourceUrl', label: '播放地址（mp4 / m3u8）', type: 'text' },
+      { key: 'sourceUrl', label: '播放地址（B站/YouTube/Dailymotion 官方页或嵌入地址，或已授权 mp4 / m3u8）', type: 'text' },
       { key: 'duration', label: '时长（秒）', type: 'number', list: true },
       { key: 'isFree', label: '免费可看', type: 'switch', list: true },
       { key: 'sort', label: '排序', type: 'number', list: true },
@@ -370,14 +373,31 @@ export function buildWhere(resource: ResourceDef, keyword?: string, extra?: Reco
     const cols = resource.search.map((col) => like(col, `%${keyword}%`));
     clauses.push(or(...cols)!);
   }
+  const columns = getTableColumns(resource.table) as Record<string, Column>;
   for (const col of resource.fields) {
     const value = extra?.[col.key];
     if (value === undefined || value === '') continue;
-    const columns = getTableColumns(resource.table);
-    const column = (columns as Record<string, Column>)[col.key];
-    if (column) clauses.push(eq(column, value));
+    // 密码哈希既能当过滤条件猜，也会把它的存在性泄漏给调用方。
+    if (SECRET_COLUMNS.has(col.key)) continue;
+    const column = columns[col.key];
+    if (!column) continue;
+    if (resource.boolFields.includes(col.key)) {
+      clauses.push(eq(column, /^(1|true|on)$/i.test(value) ? 1 : 0));
+    } else if (resource.numFields.includes(col.key)) {
+      const n = Number(value);
+      if (Number.isFinite(n)) clauses.push(eq(column, Math.trunc(n)));
+    } else {
+      clauses.push(eq(column, value));
+    }
   }
   return clauses.length ? and(...clauses) : undefined;
+}
+
+/** 列表与详情返回前剔除密钥列；编辑表单靠「留空不修改」语义，不需要读回哈希。 */
+export function sanitizeRow<T extends Record<string, unknown>>(row: T): T {
+  const copy = { ...row };
+  for (const key of SECRET_COLUMNS) delete (copy as Record<string, unknown>)[key];
+  return copy;
 }
 
 export function normalizeValues(

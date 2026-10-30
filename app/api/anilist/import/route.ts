@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { fail, ok, requireApiAdmin } from '@/lib/api';
 import { anilistById, anilistDescriptionToText } from '@/lib/anilist';
 import { matchBangumi } from '@/lib/bangumi';
-import { demoSourceFor } from '@/lib/demo-streams';
 import { getDb } from '@/lib/db';
+import { trailerEmbed } from '@/lib/media';
 import { anime, chapters, makers, videos } from '@/lib/db/schema';
 
 export const dynamic = 'force-dynamic';
@@ -106,23 +106,22 @@ export async function POST(req: Request) {
       await db.insert(chapters).values({ id: chapterId, animeId: id, title: media.format === 'MOVIE' ? '正片' : '第 1 季', sort: 0 });
       [chapter] = await db.select().from(chapters).where(eq(chapters.id, chapterId)).limit(1);
     }
-    if (chapter) {
-      const existingVideos = await db.select({ id: videos.id }).from(videos).where(eq(videos.chapterId, chapter.id));
-      for (let i = existingVideos.length; i < episodeCount; i += 1) {
-        const source = demoSourceFor(i);
-        const videoId = `${id}-v${i + 1}`;
+    // 只挂该作品自己的官方预告；未授权的全集片源不自动生成，管理员可在后台按集补已授权源。
+    if (chapter && values.trailer) {
+      const existing = await db.select({ id: videos.id }).from(videos).where(eq(videos.animeId, id));
+      if (existing.length === 0) {
         await db.insert(videos).values({
-          id: videoId,
+          id: `${id}-v1`,
           animeId: id,
           chapterId: chapter.id,
-          title: media.format === 'MOVIE' ? '正片' : `第 ${i + 1} 话`,
-          sourceUrl: source.url,
+          title: '官方预告 / PV',
+          sourceUrl: trailerEmbed('youtube', values.trailer),
           duration: 0,
-          isFree: true,
-          sort: i,
+          isFree: price <= 0,
+          sort: 0,
           playCount: 0,
         });
-        createdVideos += 1;
+        createdVideos = 1;
       }
     }
   }

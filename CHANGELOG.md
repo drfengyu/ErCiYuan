@@ -2,6 +2,37 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 格式，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.3.0] - 2026-10-30
+
+### 变更
+
+- **播放资源换成各作品自己的真实资源**：删掉 `lib/demo-streams.ts` 与种子数据里 169 条与番剧无关的公开测试流
+  （Mux / Tears of Steel / Sintel / Big Buck Bunny），改为按 AniList `trailer` 为每部番挂它自己的官方预告 / PV
+  （15 条真实资源位；无官方预告的条目不再伪造剧集）。AniList 导入同步改为「最多建 1 条预告位」，
+  不再自动编造「第 n 话」。
+- 播放页文案与页脚改为如实说明资源来源，并新增「官方观看」渠道按钮组（来自 AniList `externalLinks`）。
+- 本站不内置、也不代找未授权的全集片源；`videos.sourceUrl` 留给管理员逐集填入已授权正版源。
+
+### 新增
+
+- `lib/media.ts`：`resolveMedia()` 统一识别四类资源位地址——B 站视频页/番剧播放页（自动转 `player.bilibili.com` 官方嵌入）、
+  YouTube 分享或嵌入地址（转 `youtube-nocookie`）、Dailymotion、以及 mp4 / HLS 直链；`VideoPlayer` 据此在 iframe 与
+  `<video>` 之间切换，并放进 16:9 自适应容器。无法识别的地址给出「在新窗口打开」而不是黑屏。
+- 移动端与窄屏适配：新增 `public/assets/css/responsive.css`（≤1200 / ≤768 / ≤480 三档），覆盖 `base.css` 里
+  `body{min-width:1230px}` 这一横向溢出根因，头部纵向堆叠、卡片 4→2→1 列、详情与播放页两栏转单栏、表格横向滚动、
+  登录表单自适应。390px 下 10 类页面 `scrollWidth == innerWidth`，桌面端布局实测未变。
+- `docs/API.md`：17 个 route / 24 个接口方法的完整文档（参数表、响应示例、错误码、admin 资源表驱动、踩坑清单）。
+
+### 修复
+
+- 安全：`requireApiUser()` / `requireApiAdmin()` 此前只验 JWT 不回查库，管理员禁用或删除账号后旧 cookie 在 7 天内仍可
+  下单、评论、收藏；现改为统一走 `getCurrentUser()`。
+- 安全：`GET/POST/PUT /api/admin/users` 返回整行导致 bcrypt 密码哈希外泄，且 `password` 还是合法过滤参数（可比对哈希）；
+  现由 `sanitizeRow()` 剔除并禁止作为过滤条件。
+- 后台列表 `?featured=true` / `?published=false` 恒查不到数据（布尔列存的是 0/1），`buildWhere()` 现按 `boolFields` 归一；
+  数值列按 `numFields` 取整，非有限数跳过条件。
+- 后台列表 `?page=abc` 会算出 `NaN` 并抛成 500（响应体也不是统一信封）；现 `intParam()` 取整夹取并回落默认值。
+
 ## [2.2.0] - 2026-10-30
 
 ### 新增

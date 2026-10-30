@@ -10,6 +10,7 @@ const BASE = [
   'order',
   'swiper-3.3.1.min',
   'pages-weixinpay',
+  'responsive',
 ];
 
 export default function SiteCss({ extra = [] }: { extra?: string[] }) {

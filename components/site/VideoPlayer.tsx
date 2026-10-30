@@ -2,8 +2,48 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { isHls } from '@/lib/format';
+import { resolveMedia } from '@/lib/media';
 
 export default function VideoPlayer({ src, title }: { src: string; title: string }) {
+  const media = resolveMedia(src);
+
+  return (
+    <div style={{ background: '#000' }}>
+      <div className="video-frame" style={{ position: 'relative', width: '100%', paddingTop: '56.25%', background: '#000' }}>
+        <div style={{ position: 'absolute', inset: 0 }}>
+          {media.kind === 'embed' ? (
+            <iframe
+              src={media.src}
+              title={title}
+              loading="lazy"
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+              style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+            />
+          ) : media.kind === 'file' ? (
+            <NativePlayer src={media.src} title={title} />
+          ) : (
+            <Unsupported src={src} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Unsupported({ src }: { src: string }) {
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: '#c8d3e0', fontSize: 13, padding: 16, textAlign: 'center' }}>
+      <span>该资源位指向的地址不是可嵌入的官方播放器，也不是 mp4 / HLS 直链。</span>
+      <a href={src} target="_blank" rel="noreferrer" style={{ color: '#5eceeB', textDecoration: 'underline' }}>
+        在新窗口打开
+      </a>
+    </div>
+  );
+}
+
+function NativePlayer({ src, title }: { src: string; title: string }) {
   const ref = useRef<HTMLVideoElement | null>(null);
   const [error, setError] = useState('');
 
@@ -30,7 +70,7 @@ export default function VideoPlayer({ src, title }: { src: string; title: string
       hls.loadSource(src);
       hls.attachMedia(video!);
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) setError('演示视频源暂不可达，可切换到其它剧集试试。');
+        if (data.fatal) setError('视频源暂不可达，可切换到其它资源位试试。');
       });
     }
 
@@ -43,17 +83,17 @@ export default function VideoPlayer({ src, title }: { src: string; title: string
   }, [src]);
 
   return (
-    <div style={{ background: '#000' }}>
+    <>
       <video
         ref={ref}
         title={title}
         controls
         playsInline
         preload="metadata"
-        style={{ width: '100%', maxHeight: '70vh', background: '#000', display: 'block' }}
-        onError={() => setError('视频加载失败，可能是外部演示源临时不可用。')}
+        style={{ width: '100%', height: '100%', background: '#000', display: 'block' }}
+        onError={() => setError('视频加载失败，可能是外部源临时不可用。')}
       />
       {error && <p style={{ color: '#f6c', padding: '8px 16px', margin: 0 }}>{error}</p>}
-    </div>
+    </>
   );
 }

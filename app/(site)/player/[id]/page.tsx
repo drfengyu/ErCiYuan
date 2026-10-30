@@ -5,6 +5,7 @@ import VideoPlayer from '@/components/site/VideoPlayer';
 import ViewTracker from '@/components/site/ViewTracker';
 import { getCurrentUser } from '@/lib/auth';
 import { formatDuration } from '@/lib/format';
+import { streamingLinks } from '@/lib/media';
 import { getPlayback, hasBought, listComments } from '@/lib/queries';
 
 export const metadata = { title: '在线播放' };
@@ -15,6 +16,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   if (!playback) notFound();
 
   const { video, anime, chapters } = playback;
+  const official = streamingLinks(anime.links);
   const user = await getCurrentUser();
   const bought = user ? await hasBought(user.id, anime.id) : false;
   const canPlay = anime.price === 0 || video.isFree || bought;
@@ -41,9 +43,31 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           <article className="fl col-7">
             <section className="mr30">
               <VideoPlayer src={video.sourceUrl} title={`${anime.title} ${video.title}`} />
-              <p className="c-fff fsize12" style={{ color: '#8ea3bd', paddingTop: 10, fontSize: 12 }}>
-                本片段为可商用开源演示视频（Mux / W3C / Unified Streaming 公开测试流），仅用于验证播放器链路。
-              </p>
+              <div style={{ padding: '12px 0' }}>
+                <p className="c-999" style={{ fontSize: 12, lineHeight: 1.8 }}>
+                  当前资源位：{video.title}。本站只挂载该作品自己公开的官方预告 / 正版嵌入源，不提供未授权的全集片源；
+                  完整版请走下方官方渠道。管理员可在后台「剧集」里为每一集填入已授权的正版源地址。
+                </p>
+                {official.length > 0 && (
+                  <p style={{ marginTop: 8 }}>
+                    <span className="c-999" style={{ fontSize: 12, marginRight: 8 }}>
+                      官方观看：
+                    </span>
+                    {official.map((link) => (
+                      <a
+                        key={link.url}
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="comm-btn c-btn-1"
+                        style={{ marginRight: 6, padding: '4px 12px', fontSize: 12 }}
+                      >
+                        {link.site}
+                      </a>
+                    ))}
+                  </p>
+                )}
+              </div>
               <div className="mt50" style={{ background: '#fff', padding: 16, borderRadius: 6 }}>
                 <h6 className="c-g-content c-infor-title">
                   <span>弹幕评论（{comments.length}）</span>

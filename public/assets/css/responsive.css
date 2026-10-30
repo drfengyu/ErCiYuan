@@ -1,0 +1,260 @@
+/* 移动端与窄屏适配：原站 CSS 是 1160px 固定栅格，这里只在窄屏覆盖，桌面端表现不变。 */
+
+@media (max-width: 1200px) {
+  /* base.css 里 body{min-width:1230px} 是横向溢出的根因 */
+  body {
+    min-width: 0;
+  }
+  .container {
+    width: auto;
+    max-width: 1160px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  #header {
+    padding: 12px 0;
+  }
+  #header > .container {
+    position: relative;
+  }
+  #logo {
+    float: none;
+    width: 132px;
+    height: 44px;
+    margin: 0 auto 8px;
+  }
+  #logo a {
+    display: block;
+    height: 44px;
+  }
+  .h-r-nsl {
+    float: none !important;
+    width: auto !important;
+  }
+  .h-r-nsl > .nav {
+    float: none !important;
+    width: auto !important;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 6px;
+  }
+  .nav li {
+    float: none !important;
+    display: inline-block;
+    margin: 0 10px !important;
+  }
+  .nav li a {
+    padding: 0 !important;
+    line-height: 28px !important;
+    font-size: 15px !important;
+  }
+  .h-r-login,
+  .h-r-search {
+    float: none !important;
+    padding-top: 0 !important;
+    text-align: center;
+    margin: 6px 0 0 !important;
+  }
+  .h-r-login li {
+    float: none !important;
+    display: inline-block;
+    margin: 0 6px !important;
+  }
+  .h-r-login li a {
+    line-height: 28px !important;
+    font-size: 14px !important;
+  }
+  .h-r-search {
+    display: block;
+  }
+  .h-r-search form,
+  .h-r-s-box {
+    display: inline-block;
+    position: relative;
+    width: 100% !important;
+    max-width: 320px;
+    margin: 0 !important;
+  }
+  .h-r-s-box .s-input {
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .comm-title {
+    margin: 22px 0 18px;
+  }
+  .comm-title h2 span {
+    font-size: 20px;
+  }
+
+  /* 列表页筛选条：dt 不再左浮，改成一行标题 + 换行的选项 */
+  .c-s-dl dl {
+    padding: 10px 0 0;
+  }
+  .c-s-dl dl dt {
+    float: none;
+    width: auto;
+    text-align: left;
+    padding-right: 0;
+  }
+  .c-s-dl-li {
+    padding-left: 0;
+  }
+  .c-s-more {
+    display: none;
+  }
+  .js-wrap {
+    height: auto;
+    padding: 6px 10px;
+  }
+  .js-wrap .fr,
+  .js-wrap .fl {
+    float: none !important;
+    display: block;
+    width: auto !important;
+  }
+  .js-wrap .fr {
+    order: -1;
+    padding-bottom: 4px;
+  }
+  .js-tap {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .js-tap li {
+    float: none;
+  }
+  .js-tap li a {
+    padding: 0 14px;
+    line-height: 34px;
+  }
+
+  /* 卡片栅格：4 列 → 2 列 */
+  .comm-anime-list ul {
+    margin-left: 0;
+  }
+  .comm-anime-list li {
+    width: 50%;
+    float: left;
+  }
+  .comm-anime-list li .cc-l-wrap {
+    margin: 0 12px 28px 12px;
+  }
+
+  /* 详情页 / 播放页：两栏 → 单栏 */
+  .c-infor-box > .col-7,
+  .c-infor-box > .col-3,
+  .col-md-8,
+  .col-md-4 {
+    width: 100% !important;
+    float: none !important;
+  }
+  .c-infor-box .mr30,
+  .c-infor-box .ml30 {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  .c-v-pic-wrap,
+  .thr-attr-box,
+  .c-attr-wrap {
+    float: none !important;
+    width: 100% !important;
+  }
+  .thr-attr-box,
+  .c-attr-wrap {
+    height: auto !important;
+    margin-top: 12px;
+  }
+  .thr-attr-ol {
+    height: auto;
+    display: flex;
+  }
+  .thr-attr-ol li {
+    height: auto;
+    width: 33.33%;
+    padding: 10px 0;
+  }
+
+  /* 排行榜 / 文章列表：缩略图不再绝对定位占 210px */
+  .i-article-list li {
+    padding: 0 0 16px;
+    min-height: 0;
+  }
+  .i-article-pic {
+    position: static;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  .i-article-pic img {
+    width: 120px;
+    height: auto;
+  }
+  .i-art-title {
+    font-size: 16px;
+  }
+
+  /* 轮播与播放器：压掉组件里的内联固定高度 */
+  .i-slide,
+  .i-slide .swiper-container,
+  .i-slide .swiper-slide {
+    height: 190px !important;
+  }
+  .i-slide img {
+    height: 190px !important;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  /* 登录 / 注册：sign.css 的表单是 400px + 50px 内边距，窄屏会顶出视口 */
+  .sign .main {
+    width: auto;
+    max-width: 360px;
+    padding: 24px 18px;
+    margin: 24px 12px 32px;
+  }
+  .sign .logo {
+    position: static;
+    text-align: center;
+    padding-top: 18px;
+  }
+  .sign .logo img {
+    width: 150px;
+    height: auto;
+  }
+
+  /* 订单/表格类：允许横向滚动而不是撑破视口 */
+  .order-list-item,
+  .c-order-table,
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .order-btn {
+    width: 100%;
+  }
+  #footer .container,
+  .fr,
+  .fl {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .comm-anime-list li {
+    width: 100%;
+  }
+  .comm-anime-list li .cc-l-wrap {
+    margin-bottom: 22px;
+  }
+  .comm-title h2 span {
+    font-size: 18px;
+  }
+  .anime-txt-body {
+    line-height: 26px;
+    padding: 0;
+  }
+}
