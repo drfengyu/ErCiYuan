@@ -1,7 +1,18 @@
 import AnimeCard from '@/components/site/AnimeCard';
 import MakerPic from '@/components/site/MakerPic';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { getMakerDetail } from '@/lib/queries';
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const detail = await getMakerDetail(id);
+  if (!detail) return { title: '制作方不存在' };
+  return {
+    title: `制作方 · ${detail.maker.name}`,
+    description: (detail.maker.intro || `${detail.maker.name} 制作动画列表`).slice(0, 120),
+  };
+}
 
 export default async function MakerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

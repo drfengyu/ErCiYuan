@@ -7,12 +7,22 @@ export function parseJson<T>(raw: string | null | undefined, fallback: T): T {
   }
 }
 
+// 固定时区：Vercel 运行时是 UTC、浏览器多为 +08，不指定时区会导致服务端与客户端文本不一致（React #418）。
+const DATE_FMT = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '-';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return DATE_FMT.format(date).replace(/\//g, '-');
 }
 
 export function formatDuration(seconds: number | null | undefined): string {

@@ -7,6 +7,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { formatDuration } from '@/lib/format';
 import { getPlayback, hasBought, listComments } from '@/lib/queries';
 
+export const metadata = { title: '在线播放' };
+
 export default async function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const playback = await getPlayback(id);

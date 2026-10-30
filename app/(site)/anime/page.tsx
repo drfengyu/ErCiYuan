@@ -25,6 +25,8 @@ function qs(sp: Sp, overrides: Record<string, string | number | undefined>) {
   return search ? `/anime?${search}` : '/anime';
 }
 
+export const metadata = { title: '动漫列表' };
+
 export default async function AnimeListPage({ searchParams }: { searchParams: Promise<Sp> }) {
   const sp = await searchParams;
   const sort = (sp.sort as 'views' | 'updated' | 'episodes' | 'score') || 'views';

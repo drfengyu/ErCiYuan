@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import BuyButton from '@/components/site/BuyButton';
 import CommentSection from '@/components/site/CommentSection';
 import FavoriteButton from '@/components/site/FavoriteButton';
@@ -7,7 +8,22 @@ import MakerPic from '@/components/site/MakerPic';
 import TrailerEmbed from '@/components/site/TrailerEmbed';
 import { getCurrentUser } from '@/lib/auth';
 import { formatCount, formatMoney } from '@/lib/format';
-import { getAnimeDetail, getNestedCategories, hasBought, isFavorite } from '@/lib/queries';
+import { findAnime, getAnimeDetail, getNestedCategories, hasBought, isFavorite } from '@/lib/queries';
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const row = await findAnime(id);
+  if (!row) return { title: '动漫不存在' };
+  return {
+    title: row.title,
+    description: row.description.slice(0, 120) || `${row.title}（${row.year || '-'}）番剧详情`,
+    openGraph: {
+      title: row.title,
+      description: row.description.slice(0, 120),
+      images: row.cover ? [{ url: row.cover }] : [],
+    },
+  };
+}
 
 export default async function AnimeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

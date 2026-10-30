@@ -6,7 +6,8 @@
 
 原有的 Java 后端、Nuxt 前台、Vue 后台代码保留在 `er_ci_yuan/`、`er_ci_yuan_site/`、`er_ci_yuan_front/` 目录，仅作参考，不参与新应用构建。
 
-> 在线演示：<https://erciyuan-seven.vercel.app>（未绑定 Turso，运行在内存库上：冷启动会重建种子数据，新写入不持久；登录见下方演示账号）
+> 在线演示：<https://erciYuan.fuwari.fun>（备用域名 <https://erciyuan-seven.vercel.app>）
+> 未绑定 Turso，运行在内存库上：冷启动会重建种子数据，新写入不持久；登录见下方演示账号。
 
 ## 快速开始
 
@@ -74,6 +75,9 @@ public/assets/   原站 CSS / 图片 / 字体（保持原有视觉）
 3. 设置 `AUTH_SECRET`（随机长字符串）。生产环境未设置时 JWT 会退回内置占位密钥，务必改掉。
 4. 可选 `DEMO_SMS=1` 保留演示验证码；不设置则注册接口只报「已发送」，需要自行接入短信通道。
 5. 可选 `BANGUMI_API_BASE` 指向可访问的镜像；大陆网络直连 `api.bgm.tv` 受阻时，导入会退回 AniList 的英文标题与简介。
+6. 自定义域名（已配置）：`vercel domains add erciYuan.fuwari.fun` 后，在 DNS 加
+   `A 记录 erciyuan → 76.76.21.21`（Cloudflare 需设为「仅 DNS」，橙云会导致验证失败），
+   并设置环境变量 `NEXT_PUBLIC_SITE_URL=https://erciYuan.fuwari.fun` 让分享卡片与 sitemap 用正式域名。
 
 ## 本地网络说明
 
@@ -83,3 +87,7 @@ AniList 与 Bangumi 在部分网络环境不可直连。若接口状态面板（
 ## 合规提醒
 
 本项目仅作为技术迁移演示：元数据来自公开 API，播放内容为开源可商用测试片段。请勿在未获授权的情况下接入真实番剧资源。
+
+## 版本
+
+当前版本见 `package.json`，每个版本的改动记录在 [CHANGELOG.md](./CHANGELOG.md)。

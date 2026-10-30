@@ -63,6 +63,7 @@ export default async function HomePage() {
           </section>
         </div>
 
+        {seasonal.length > 0 && (
         <div style={{ background: '#fff' }}>
           <section className="container">
             <header className="comm-title">
@@ -75,12 +76,9 @@ export default async function HomePage() {
                 实时数据来自 AniList GraphQL 公开接口 · 点击卡片跳转官方条目
               </p>
             </header>
-            {seasonal.length === 0 ? (
-              <p className="tac c-999 fsize14 pt20 pb20">AniList 接口暂时不可用，稍后重试。</p>
-            ) : (
-              <article className="comm-anime-list">
-                <ul className="of">
-                  {seasonal.map((media) => {
+            <article className="comm-anime-list">
+              <ul className="of">
+                {seasonal.map((media) => {
                     const localId = media.id ? localMap.get(media.id) : undefined;
                     const title = media.title.english || media.title.romaji || media.title.native || '未命名';
                     return (
@@ -101,12 +99,12 @@ export default async function HomePage() {
                       </li>
                     );
                   })}
-                </ul>
-                <div className="clear" />
-              </article>
-            )}
+              </ul>
+              <div className="clear" />
+            </article>
           </section>
         </div>
+        )}
 
         <div>
           <section className="container">

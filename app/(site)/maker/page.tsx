@@ -2,6 +2,8 @@ import Link from 'next/link';
 import MakerPic from '@/components/site/MakerPic';
 import { listMakers } from '@/lib/queries';
 
+export const metadata = { title: '制作方' };
+
 export default async function MakerListPage() {
   const items = await listMakers();
 

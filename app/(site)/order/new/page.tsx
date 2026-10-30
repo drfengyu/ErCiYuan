@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { requireUser } from '@/lib/auth';
 
 export default async function NewOrderPage({ searchParams }: { searchParams: Promise<{ animeId?: string }> }) {
-  const user = await requireUser('/ucenter/order');
   const { animeId } = await searchParams;
+  await requireUser(`/order/new?animeId=${animeId ?? ''}`);
   const parsed = z.string().min(1).safeParse(animeId ?? '');
 
   return (
