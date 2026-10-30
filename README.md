@@ -1,247 +1,83 @@
-# ErCiYuan
+# 二刺螈 ErCiYuan · Next.js / Vercel 版
 
+原项目是 Spring Cloud 微服务 + Nuxt 2 + Vue 2 后台的二次元视频站，无法直接部署到 Vercel。
+本仓库把它重写成**一个可部署到 Vercel 的 Next.js 15 全栈应用**：页面、API、鉴权、数据库访问全在同一进程内，
+番剧元数据、封面、预告片与观看链接对接 **AniList / Bangumi 公开接口**，播放链路使用**可商用的开源测试流**。
 
+原有的 Java 后端、Nuxt 前台、Vue 后台代码保留在 `er_ci_yuan/`、`er_ci_yuan_site/`、`er_ci_yuan_front/` 目录，仅作参考，不参与新应用构建。
 
-## 项目结构
+## 快速开始
 
-<img width="493" height="367" alt="image" src="https://github.com/user-attachments/assets/344497f8-201b-4f0c-8432-6dea17986dca" />
-
-
-
-
-## 后端技术栈
-
-### 项目骨架
-
-| 框架               | 版本          |                                                              |
-| ------------------ | ------------- | ------------------------------------------------------------ |
-| SpringBoot         | 2.2.2.RELEASE | √                                                            |
-| SpringCloud        | Hoxton.SR1    | √                                                            |
-| SpringCloudAlibaba | 2.1.0.RELEASE | √                                                            |
-| Mybatis Plus       | 3.3.1         | ORM                                                          |
-| Swagger            | 2.8.0         | 接口文档及测试                                               |
-| SpringSecurity     | 2.2.2.RELEASE | 用户认证与授权，动态路由                                     |
-| gateway            | 2.2.1.RELEASE | SpringCloud Gateway，新一代微服务网关，进行请求过滤以以及转发 |
-
-
-
-### 数据库
-
-| 数据库 | 作用                                           |
-| ------ | ---------------------------------------------- |
-| MySQL  | 存储数据                                       |
-| Redis  | 缓存首页数据，缓存 token 用于 refresh 以及校验 |
-
-
-
-### 第三方服务
-
-| 服务名     | 作用                 |
-| ---------- | -------------------- |
-| 微信支付   | 我，二刺螈皇帝，打钱 |
-| 阿里云 VOD | 视频上传，解码等     |
-| 阿里云 OSS | 图片和文件存储       |
-| 阿里云 SMS | 短信发送             |
-
-
-
-### 其它
-
-| 组件名    | 作用                           |
-| --------- | ------------------------------ |
-| nacos     | 服务注册与发现、配置中心       |
-| sentinel  | 服务监控，以及熔断、限流、降级 |
-| openFegin | http 远程调用                  |
-| easyExcel | Excel 操作                     |
-| jjwt      | jwt token 工具                 |
-
-
-
-
-
-## 前端技术栈
-
-
-
-### 后台
-
-| 框架、UI、模板    |
-| ----------------- |
-| Vue               |
-| elementUI         |
-| vue-element-admin |
-
-
-
-### 前台
-
-| 框架、UI  |
-| --------- |
-| Vue       |
-| Nuxt      |
-| elementUI |
-
-
-
-#### 其它
-
-DPlayer：视频播放
-
-
-
-## 环境搭建
-
-
-
-### 导入数据库
-
-导入 sql 文件夹下的所有 sql 文件
-
-
-
-### 搭建 Redis
-
-我使用的是 docker 搭建的，详情可以参考我的教程 [redis 入门](https://www.yuque.com/antigenmhc/oqye1q/gz5scs#3579ecf8)
-
-
-
-### 搭建弹幕 node 服务
-
-在视频播放中用到了第三方播放器 DPlayer，可以搭载弹幕的后端服务
-
-```shell
-mkdir dplayer-node
-cd dplayer-node
-git clone https://github.com/MoePlayer/DPlayer-node .
-docker-compose build
-docker-compose pull
-docker-compose up # -d for run it in the background
+```bash
+npm install
+npm run dev          # http://localhost:3000，首次启动自动建表并写入种子数据
 ```
 
-
-
-### 启动 nacos
-
-nacos 可以本地启动，也可以在虚拟机上启动，这里介绍使用 docker 启动。[nacos 安装](https://www.yuque.com/antigenmhc/tg6usw/ailhhi#4f09501c)
-
-
-
-### 启动 sentinel
-
-同样 sentinel 也可以本地启动，也可以在虚拟机上启动，这里不再赘述
-
-
-
-### 修改配置文件
-
-oss、vod、sms、ucenter、trade 服务中都涉及到了 Key 和 Secret，请自行申请并替换 ( 阿里云的，github 和 gitee 的，微信支付的 )
-
-涉及到 nacos 和 sentinel 的端口以及 ip 请自行修改
-
-涉及到的内网穿透，请自行搭建 / 购买
-
-ps：项目中提供的配置文件是通过 nacos 进行整合的，如果想要不在 nacos 上的版本，请看过往版本
-
-
-
-
-
-## 启动项目
-
-
-
-### 前台启动
-
-front 为后台，site 为 前台，分别
-
-- npm install
-- npm run dev
-
-启动后会自行弹出
-
-
-
-### 后台启动
-
-全启，没啥好说的
-
-
-
-## 效果图
-
-### 后台
-
-#### admin
-
-<img width="1922" height="948" alt="image" src="https://github.com/user-attachments/assets/693779b8-282a-4969-837d-999097c93819" />
-
-
-<img width="1898" height="941" alt="image" src="https://github.com/user-attachments/assets/8916cc09-7d8e-4583-a28e-ade613a5a6fd" />
-
-
-<img width="1904" height="939" alt="image" src="https://github.com/user-attachments/assets/42a637a7-bd9b-4153-872e-932f76b2cf0d" />
-
-
-
-
-#### 普通管理员
-
-<img width="1909" height="939" alt="image" src="https://github.com/user-attachments/assets/4e508578-2467-46d2-8202-636950866303" />
-
-
-<img width="1907" height="922" alt="image" src="https://github.com/user-attachments/assets/2bf7784f-0726-472d-b3f9-6c2f20a0961a" />
-
-
-
-
-
-
-### 前台
-
-<img width="1063" height="665" alt="image" src="https://github.com/user-attachments/assets/c7bedfc4-980d-40e5-ae6b-ee7c53244626" />
-
-
-<img width="1876" height="879" alt="image" src="https://github.com/user-attachments/assets/9201e895-9b94-45a5-bdae-c1f95cbe2049" />
-
-
-首页进入可能较慢，因为会把数据缓存到 Redis 里
-
-
-
-#### 动漫
-
-<img width="1081" height="1369" alt="image" src="https://github.com/user-attachments/assets/2cdaa391-3229-4786-b364-99cbc5b1424d" />
-
-
-<img width="1889" height="934" alt="image" src="https://github.com/user-attachments/assets/e8dc1176-a3d3-4092-9496-849c592c91f3" />
-
-
-<img width="1889" height="2467" alt="image" src="https://github.com/user-attachments/assets/b35d4ba8-9fee-4b86-be7b-58378fd41441" />
-
-
-
-
-#### 制作方
-
-<img width="1079" height="852" alt="image" src="https://github.com/user-attachments/assets/d9626364-fe15-417a-9a04-6798149975ad" />
-
-
-<img width="1075" height="961" alt="image" src="https://github.com/user-attachments/assets/ef76ea77-473f-4ac7-860c-d8f901a21817" />
-
-
-
-
-
-
-#### 用户中心
-
-<img width="1075" height="939" alt="image" src="https://github.com/user-attachments/assets/e5069888-7afa-422d-b3b6-5496bdc0c52d" />
-
-<img width="1811" height="939" alt="image" src="https://github.com/user-attachments/assets/208f4e60-3ba4-4764-866c-5430a3d33d29" />
-
-<img width="1729" height="900" alt="image" src="https://github.com/user-attachments/assets/5d0ae17a-1660-4b44-8ead-5c6deda71271" />
-
-
-
-
-
+本地默认使用 `data/erciyuan.db`（LibSQL 文件库，已在 .gitignore 中）。删除该文件即可重置数据。
+
+### 演示账号
+
+| 角色 | 手机号 | 密码 | 说明 |
+| --- | --- | --- | --- |
+| 管理员 | `13800000000` | `admin123` | 登录后进入 `/admin` |
+| 普通用户 | `13900000000` | `demo123` | 已购买《你的名字。》，收藏了 2 部番 |
+
+注册流程需要短信验证码：开发环境或 `DEMO_SMS=1` 时接口直接返回验证码，也可使用万能码 `123456`。
+
+## 技术栈对照
+
+| 能力 | 原实现 | 现在 |
+| --- | --- | --- |
+| 运行时 | Spring Cloud 微服务 + Nacos + Sentinel + Gateway | Next.js 15 App Router（Server Components + Route Handlers），单应用 |
+| 前台 | Nuxt 2 + element-ui + DPlayer | React 19 + 原站 CSS（`public/assets`）+ hls.js 播放器 |
+| 后台 | Vue 2 + vue-element-admin | Next.js + Tailwind（关闭 preflight，避免污染原站样式） |
+| 数据库 | MySQL 5.7 + MyBatis Plus | LibSQL / Turso + Drizzle ORM，启动时自动建表与种子 |
+| 缓存 | Redis | AniList 查询走 Next 数据缓存（`revalidate`），会话为无状态 JWT |
+| 鉴权 | Spring Security + JWT + Redis refresh | `jose` 签发 HS256 JWT，httpOnly Cookie，服务端 `requireUser` / `requireAdmin` |
+| 视频 | 阿里云 VOD 转码播放地址 | 开源可商用测试流（HLS/MP4），播放地址存在 `videos.sourceUrl`，可换成任意 CDN |
+| 图片 | 阿里云 OSS | 直接引用 AniList CDN 图，或后台填入任意 URL |
+| 短信 | 阿里云 SMS | 演示通道（本地/`DEMO_SMS=1` 直接返回验证码），可替换为任意服务商 |
+| 支付 | 微信 Native 支付 | 本地订单状态流转的演示支付（真实商户号/回调未接入） |
+| 弹幕 | DPlayer-node | 评论/回复列表（无实时弹幕） |
+
+## 外部资源对接
+
+* **AniList GraphQL**（`lib/anilist.ts`）：首页「本季新番」实时榜单、后台搜索与导入。取回标题、封面、横幅、集数、评分、标签、制作公司、YouTube 预告片、`externalLinks` 里的官方观看渠道（Crunchyroll / Bilibili / Netflix 等），详情页直接展示为「官方资源」。请求带超时与重试，失败时降级为本地数据。
+* **Bangumi**（`lib/bangumi.ts`）：导入时用罗马音/日文标题检索条目，补中文名与中文简介。种子数据里的 16 部番（葬送的芙莉莲、进击的巨人、咒术回战、你的名字。、空之境界…）的中文标题与简介均来自这两个接口。
+* **演示视频源**（`lib/demo-streams.ts`）：Mux 公开 HLS、Unified Streaming《Tears of Steel》HLS、W3C《Sintel》MP4、Big Buck Bunny MP4。仅用于验证播放链路，**不含任何正版番剧内容**。
+
+## 目录结构
+
+```
+app/
+  (site)/        首页、/anime 列表与详情、/player、/maker、/ucenter、/order
+  (auth)/        /login、/register（沿用原站 sign.css 视觉）
+  admin/         后台：概览、AniList 导入、各资源 CRUD
+  api/           REST 接口（auth / favorites / comments / orders / views / anilist / admin）
+components/      site 与 admin 组件
+lib/             db(schema/ddl/seed)、queries、auth、anilist、bangumi、admin-resources
+public/assets/   原站 CSS / 图片 / 字体（保持原有视觉）
+```
+
+后台的增删改查由 `lib/admin-resources.ts` 的资源表驱动（anime / chapters / videos / categories / makers / ads / comments / orders / users），
+统一走 `/api/admin/[resource]`，字段用 zod 校验、按列白名单写入，删除动漫会级联清理章节、剧集、评论、收藏与订单。
+
+## 部署到 Vercel
+
+1. Fork / 推送本仓库，在 Vercel 导入（框架会被识别为 Next.js，无需额外配置）。
+2. 绑定一个 Turso（或任意 LibSQL）实例，否则每次实例冷启动都会用内存库重建种子数据，用户写入不持久：
+   * `DATABASE_URL=libsql://xxx.turso.io`
+   * `DATABASE_AUTH_TOKEN=...`
+   首次连接会自动执行建表 DDL 并写入种子数据，不需要跑迁移。
+3. 设置 `AUTH_SECRET`（随机长字符串）。生产环境未设置时 JWT 会退回内置占位密钥，务必改掉。
+4. 可选 `DEMO_SMS=1` 保留演示验证码；不设置则注册接口只报「已发送」，需要自行接入短信通道。
+5. 可选 `BANGUMI_API_BASE` 指向可访问的镜像；大陆网络直连 `api.bgm.tv` 受阻时，导入会退回 AniList 的英文标题与简介。
+
+## 本地网络说明
+
+AniList 与 Bangumi 在部分网络环境不可直连。若接口状态面板（后台首页）显示不可用，请为本机配置代理后再访问，
+或把 `BANGUMI_API_BASE` 指向可用网关。首页、列表、播放与后台功能均不依赖外部接口，只有「本季新番」和「导入」需要联网。
+
+## 合规提醒
+
+本项目仅作为技术迁移演示：元数据来自公开 API，播放内容为开源可商用测试片段。请勿在未获授权的情况下接入真实番剧资源。
