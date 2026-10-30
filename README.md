@@ -6,6 +6,8 @@
 
 原有的 Java 后端、Nuxt 前台、Vue 后台代码保留在 `er_ci_yuan/`、`er_ci_yuan_site/`、`er_ci_yuan_front/` 目录，仅作参考，不参与新应用构建。
 
+> 在线演示：<https://erciyuan-seven.vercel.app>（未绑定 Turso，运行在内存库上：冷启动会重建种子数据，新写入不持久；登录见下方演示账号）
+
 ## 快速开始
 
 ```bash
