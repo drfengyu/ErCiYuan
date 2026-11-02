@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { and, asc, count, desc, eq, inArray, like, or, sql } from 'drizzle-orm';
 import { getDb } from './db';
 import * as t from './db/schema';
@@ -218,6 +219,12 @@ export async function getAnimeDetail(id: string) {
   return { anime: decorate(row, maker, category), maker, chapters: chapterNodes, comments };
 }
 
+/** 后台下拉用的轻量列表（只有 id 与标题）。 */
+export async function listAnimeOptions() {
+  const { db } = await getDb();
+  return db.select({ id: t.anime.id, title: t.anime.title }).from(t.anime).orderBy(asc(t.anime.title));
+}
+
 export async function listMakers() {
   const { db } = await getDb();
   return db.select().from(t.makers).orderBy(asc(t.makers.sort));
@@ -300,6 +307,75 @@ export async function getLocalAnilistMap() {
     if (row.anilistId) map.set(row.anilistId, row.id);
   }
   return map;
+}
+
+/** 每个用户每部番只保留一条进度，冲突时更新到最新看到的集与秒数。 */
+export async function saveProgress(userId: string, input: { animeId: string; videoId: string; positionSec: number; durationSec: number }) {
+  const { db } = await getDb();
+  const now = new Date().toISOString();
+  const positionSec = Math.max(0, Math.trunc(input.positionSec || 0));
+  const durationSec = Math.max(0, Math.trunc(input.durationSec || 0));
+  await db
+    .insert(t.watchProgress)
+    .values({
+      id: randomUUID().slice(0, 12),
+      userId,
+      animeId: input.animeId,
+      videoId: input.videoId,
+      positionSec,
+      durationSec,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [t.watchProgress.userId, t.watchProgress.animeId],
+      set: { videoId: input.videoId, positionSec, durationSec, updatedAt: now },
+    });
+  return { animeId: input.animeId, videoId: input.videoId, positionSec, durationSec, updatedAt: now };
+}
+
+export async function getProgress(userId: string, animeId: string) {
+  const { db } = await getDb();
+  const [row] = await db
+    .select()
+    .from(t.watchProgress)
+    .where(and(eq(t.watchProgress.userId, userId), eq(t.watchProgress.animeId, animeId)))
+    .limit(1);
+  return row ?? null;
+}
+
+/** 「继续观看」列表：按最后更新时间倒序，带上集名与番剧标题。 */
+export async function listInProgress(userId: string, limit = 12) {
+  const { db } = await getDb();
+  const rows = await db
+    .select()
+    .from(t.watchProgress)
+    .where(eq(t.watchProgress.userId, userId))
+    .orderBy(desc(t.watchProgress.updatedAt))
+    .limit(limit);
+  if (rows.length === 0) return [];
+  const [animeRows, videoRows] = await Promise.all([
+    db.select().from(t.anime).where(inArray(t.anime.id, [...new Set(rows.map((r) => r.animeId))])),
+    db.select().from(t.videos).where(inArray(t.videos.id, [...new Set(rows.map((r) => r.videoId))])),
+  ]);
+  const animeMap = new Map(animeRows.map((a) => [a.id, a]));
+  const videoMap = new Map(videoRows.map((v) => [v.id, v]));
+  return rows
+    .map((row) => {
+      const anime = animeMap.get(row.animeId);
+      const video = videoMap.get(row.videoId);
+      if (!anime || !video) return null;
+      return {
+        animeId: row.animeId,
+        animeTitle: anime.title,
+        cover: anime.cover,
+        videoId: row.videoId,
+        videoTitle: video.title,
+        positionSec: row.positionSec,
+        durationSec: row.durationSec,
+        updatedAt: row.updatedAt,
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null);
 }
 
 export async function registerView(animeId: string, videoId?: string) {

@@ -4,7 +4,18 @@ import { useEffect, useRef, useState } from 'react';
 import { isHls } from '@/lib/format';
 import { resolveMedia } from '@/lib/media';
 
-export default function VideoPlayer({ src, title }: { src: string; title: string }) {
+type Props = {
+  src: string;
+  title: string;
+  animeId?: string;
+  videoId?: string;
+  /** 上次看到的秒数，仅对可读取位置的直链源生效 */
+  resumeSec?: number;
+  /** 已登录才会往 /api/progress 写进度 */
+  track?: boolean;
+};
+
+export default function VideoPlayer({ src, title, animeId, videoId, resumeSec = 0, track = false }: Props) {
   const media = resolveMedia(src);
 
   return (
@@ -22,7 +33,7 @@ export default function VideoPlayer({ src, title }: { src: string; title: string
               style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
             />
           ) : media.kind === 'file' ? (
-            <NativePlayer src={media.src} title={title} />
+            <NativePlayer src={media.src} title={title} resumeSec={resumeSec} report={track && animeId && videoId ? { animeId, videoId } : null} />
           ) : (
             <Unsupported src={src} />
           )}
@@ -36,14 +47,24 @@ function Unsupported({ src }: { src: string }) {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: '#c8d3e0', fontSize: 13, padding: 16, textAlign: 'center' }}>
       <span>该资源位指向的地址不是可嵌入的官方播放器，也不是 mp4 / HLS 直链。</span>
-      <a href={src} target="_blank" rel="noreferrer" style={{ color: '#5eceeB', textDecoration: 'underline' }}>
+      <a href={src} target="_blank" rel="noreferrer" style={{ color: '#5ecee6', textDecoration: 'underline' }}>
         在新窗口打开
       </a>
     </div>
   );
 }
 
-function NativePlayer({ src, title }: { src: string; title: string }) {
+function NativePlayer({
+  src,
+  title,
+  resumeSec,
+  report,
+}: {
+  src: string;
+  title: string;
+  resumeSec: number;
+  report: { animeId: string; videoId: string } | null;
+}) {
   const ref = useRef<HTMLVideoElement | null>(null);
   const [error, setError] = useState('');
 
@@ -81,6 +102,47 @@ function NativePlayer({ src, title }: { src: string; title: string }) {
       hls?.destroy();
     };
   }, [src]);
+
+  // 续播 + 每 15 秒上报一次进度；离开页面时补一次。
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    let last = 0;
+
+    const send = (positionSec: number) => {
+      if (!report || !positionSec) return;
+      const durationSec = Number.isFinite(video.duration) ? video.duration : 0;
+      if (navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify({ ...report, positionSec, durationSec })], { type: 'application/json' });
+        navigator.sendBeacon('/api/progress', blob);
+        return;
+      }
+      void fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...report, positionSec, durationSec }),
+        keepalive: true,
+      });
+    };
+
+    const onTime = () => {
+      if (resumeSec > 0 && video.currentTime < 1) video.currentTime = resumeSec;
+      const now = Date.now();
+      if (report && now - last > 15_000 && video.currentTime > 0) {
+        last = now;
+        send(Math.trunc(video.currentTime));
+      }
+    };
+    const onLeave = () => video.currentTime > 0 && send(Math.trunc(video.currentTime));
+
+    video.addEventListener('timeupdate', onTime);
+    window.addEventListener('pagehide', onLeave);
+    return () => {
+      video.removeEventListener('timeupdate', onTime);
+      window.removeEventListener('pagehide', onLeave);
+      onLeave();
+    };
+  }, [report, resumeSec]);
 
   return (
     <>

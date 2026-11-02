@@ -96,6 +96,21 @@ export const favorites = sqliteTable(
   (t) => [uniqueIndex('favorites_user_anime_idx').on(t.userId, t.animeId)],
 );
 
+/** 每个用户每部番只留最后看到的那一集与秒数，供「继续观看」使用。 */
+export const watchProgress = sqliteTable(
+  'watchProgress',
+  {
+    id: text('id').primaryKey(),
+    userId: text('userId').notNull(),
+    animeId: text('animeId').notNull(),
+    videoId: text('videoId').notNull(),
+    positionSec: integer('positionSec').notNull().default(0),
+    durationSec: integer('durationSec').notNull().default(0),
+    updatedAt: text('updatedAt').notNull(),
+  },
+  (t) => [uniqueIndex('watch_progress_user_anime_idx').on(t.userId, t.animeId)],
+);
+
 export const orders = sqliteTable('orders', {
   id: text('id').primaryKey(),
   orderNo: text('orderNo').notNull().unique(),

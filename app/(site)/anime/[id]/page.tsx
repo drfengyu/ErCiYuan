@@ -7,9 +7,9 @@ import FavoriteButton from '@/components/site/FavoriteButton';
 import MakerPic from '@/components/site/MakerPic';
 import TrailerEmbed from '@/components/site/TrailerEmbed';
 import { getCurrentUser } from '@/lib/auth';
-import { formatCount, formatMoney } from '@/lib/format';
+import { formatCount, formatDuration, formatMoney } from '@/lib/format';
 import { genreLabel } from '@/lib/genres';
-import { findAnime, getAnimeDetail, getNestedCategories, hasBought, isFavorite } from '@/lib/queries';
+import { findAnime, getAnimeDetail, getNestedCategories, getProgress, hasBought, isFavorite } from '@/lib/queries';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -33,16 +33,18 @@ export default async function AnimeDetailPage({ params }: { params: Promise<{ id
 
   const { anime, maker, chapters, comments } = detail;
   const user = await getCurrentUser();
-  const [bought, collected, nested] = await Promise.all([
+  const [bought, collected, nested, progress] = await Promise.all([
     user ? hasBought(user.id, anime.id) : Promise.resolve(false),
     user ? isFavorite(user.id, anime.id) : Promise.resolve(false),
     getNestedCategories(),
+    user ? getProgress(user.id, anime.id) : Promise.resolve(null),
   ]);
 
   const isBuy = anime.price === 0 || bought;
   const parent = nested.find((item) => item.id === anime.categoryId || item.children.some((c) => c.id === anime.categoryId));
   const allVideos = chapters.flatMap((chapter) => chapter.videos);
   const firstPlayable = allVideos.find((video) => isBuy || video.isFree);
+  const resumeVideo = progress ? allVideos.find((video) => video.id === progress.videoId) : undefined;
 
   return (
     <div id="aCoursesList" className="bg-fa of">
@@ -121,6 +123,13 @@ export default async function AnimeDetailPage({ params }: { params: Promise<{ id
                   <BuyButton animeId={anime.id} />
                 )}
               </section>
+              {progress && resumeVideo && (
+                <section className="c-attr-mt">
+                  <Link href={`/player/${resumeVideo.id}`} title="继续观看" className="comm-btn c-btn-1">
+                    继续观看 {resumeVideo.title} · {formatDuration(progress.positionSec)}
+                  </Link>
+                </section>
+              )}
             </section>
           </aside>
           <aside className="thr-attr-box">

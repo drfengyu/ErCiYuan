@@ -1,6 +1,6 @@
 # ErCiYuan REST API 文档
 
-本文覆盖 `app/api/` 下全部 17 个 `route.ts` 文件、共 24 个接口方法（同一文件的多个 HTTP 方法分别计数）。
+本文覆盖 `app/api/` 下全部 19 个 `route.ts` 文件、共 28 个接口方法（同一文件的多个 HTTP 方法分别计数）。
 所有字段名、路径、默认值、状态码、提示文案均取自当前代码（`lib/api.ts`、`lib/admin-resources.ts`、`lib/queries.ts`、`lib/db/schema.ts` 等），未做任何推测性补充。
 
 ## 0. 接口索引
@@ -21,9 +21,11 @@
 | DELETE | `/api/orders/{id}` | 本人或管理员 | `app/api/orders/[id]/route.ts` |
 | POST | `/api/orders/{id}/pay` | 仅本人 | `app/api/orders/[id]/pay/route.ts` |
 | POST | `/api/views` | 公开 | `app/api/views/route.ts` |
+| GET / POST | `/api/progress` | 登录用户 | `app/api/progress/route.ts` |
 | GET | `/api/anime/suggest?keyword=` | 公开 | `app/api/anime/suggest/route.ts` |
 | GET | `/api/anilist/search` | 公开 | `app/api/anilist/search/route.ts` |
 | POST | `/api/anilist/import` | 管理员 | `app/api/anilist/import/route.ts` |
+| GET / POST | `/api/bili/import` | 管理员 | `app/api/bili/import/route.ts` |
 | GET / POST | `/api/admin/{resource}` | 管理员 | `app/api/admin/[resource]/route.ts` |
 | PUT / DELETE | `/api/admin/{resource}/{id}` | 管理员 | `app/api/admin/[resource]/[id]/route.ts` |
 
@@ -495,6 +497,48 @@ curl -X POST 'https://erciyuan.fuwari.fun/api/orders' \
 
 ---
 
+### 3.6 `/api/progress`（GET / POST）— 观看进度
+
+需登录。表 `watchProgress` 对 `(userId, animeId)` 建唯一索引，**每部番只保留最后看到的一集与秒数**。
+
+`GET /api/progress` → `data.items`，按 `updatedAt` 倒序，最多 12 条：
+
+```json
+{
+  "items": [
+    {
+      "animeId": "154587",
+      "animeTitle": "葬送的芙莉莲",
+      "cover": "https://s4.anilist.co/.../bx154587.jpg",
+      "videoId": "ep250745",
+      "videoTitle": "1. 开幕铃声",
+      "positionSec": 432,
+      "durationSec": 1451,
+      "updatedAt": "2026-10-30T04:12:09.113Z"
+    }
+  ]
+}
+```
+
+`POST /api/progress`，body 四个字段：
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `animeId` | string | 是 | ≤64 字符 |
+| `videoId` | string | 是 | ≤64 字符，且必须真实存在 |
+| `positionSec` | number | 是 | 0–86400，服务端 `Math.trunc` 取整 |
+| `durationSec` | number | 否 | 0–86400，默认 `0` |
+
+成功 → `message: 进度已记录`，`data` 为写入后的 `{animeId, videoId, positionSec, durationSec, updatedAt}`。
+
+失败：401 `请先登录后再记录进度`；400 zod 首条文案；404 `剧集与该动漫不匹配`（`videoId` 不存在或其 `animeId` 与传入值不一致——防止越权写别人的剧集进度）。
+
+写入方有两处：`components/site/VideoPlayer.tsx` 对 **mp4/HLS 直链源**每 15 秒 `sendBeacon` 一次、`pagehide` 时补一次；
+`components/site/ProgressControl.tsx` 对**嵌入源**（B 站 / YouTube / Dailymotion）提供 `mm:ss` 手记输入——跨域 iframe 读不到播放位置，只能手记。
+读取方：详情页的「继续观看 {集名} · {mm:ss}」按钮，与播放页对直链源的自动 seek。
+
+---
+
 ## 4. 公开数据接口
 
 ### 4.1 POST `/api/views`
@@ -625,6 +669,62 @@ curl -X POST 'https://erciyuan.fuwari.fun/api/orders' \
 3. **anime upsert**，主键为 `String(media.id)`：新建时 `viewCount` 0、`createdAt`/`updatedAt` 均为当前 ISO；已存在时**不覆盖** `createdAt`、`viewCount`，且当 `Bangumi 不可达` 而库里已有中文标题/简介时保留原值（`keepTitle` / `keepDescription`）；`makerId` 为空串时走 `undefined` 即保持原值。`published` 恒被设为 `true`，`genres`、`externalLinks` 以 **JSON 字符串**入库（外链只保留 `type` 为 `STREAMING` / `INFO` 的条目、最多 8 条）。
 4. **章节**：`episodeCount > 0` 且该动漫无章节时，创建 `{animeId}-c1`，标题为 `正片`（`format === 'MOVIE'`）或 `第 1 季`，`sort` 0。
 5. **官方预告资源位**：`episodeCount > 0` 且该动漫**一条剧集都没有**时，只在第一个章节下插入 1 条 `{animeId}-v1`，标题 `官方预告 / PV`，`sourceUrl` 为 `trailerEmbed('youtube', anime.trailer)` 得到的 `https://www.youtube-nocookie.com/embed/{id}`；AniList 该条目没有 YouTube 预告（`trailer` 为空）时**不建**资源位。`isFree` 取 `price <= 0`（付费番的预告位同样要购买才打开），`duration` 0、`playCount` 0、`sort` 0，`createdVideos` 只会是 0 或 1。**不自动生成"第 n 话"**：未授权的全集片源不由系统伪造，管理员可在后台「剧集」里按集填入已授权正版源（B 站 / YouTube / Dailymotion 官方页或嵌入地址、或 mp4 / m3u8 直链，见 `lib/media.ts` 的 `resolveMedia()`）。
+
+---
+
+### 4.5 `/api/bili/import`（GET / POST）— B 站分集导入
+
+管理员专属。上游是 B 站公开接口 `https://api.bilibili.com/pgc/view/web/season`，实测**无需登录与 cookie**（只带 `User-Agent` + `Referer`），
+返回的 `duration` 单位是毫秒，服务端已换算为秒。
+
+`GET /api/bili/import?url=<B 站番剧地址>` → 只预览不落库，`data` 结构：
+
+```json
+{
+  "seasonId": 25615,
+  "mediaId": 139432,
+  "title": "魔偶马戏团",
+  "seasonTitle": "魔偶马戏团",
+  "cover": "http://i0.hdslb.com/bfs/bangumi/....png",
+  "description": "「不管发生什么事都要用心思考……」",
+  "total": 37,
+  "areas": ["日本"],
+  "styles": ["热血", "战斗", "奇幻"],
+  "episodes": [
+    {
+      "epId": 250745,
+      "epNo": 1,
+      "name": "开幕铃声",
+      "shareUrl": "https://www.bilibili.com/bangumi/play/ep250745",
+      "bvid": "BV1BW41117ZH",
+      "cid": 60335188,
+      "durationSec": 1451,
+      "cover": "http://i0.hdslb.com/bfs/archive/....jpg",
+      "pubTime": 1539183600,
+      "badge": ""
+    }
+  ]
+}
+```
+
+`url` 支持 `…/bangumi/play/ep600498`、`…/bangumi/play/ss25615`、`…/bangumi/media/md139432`、对应的 `?ep_id=/&season_id=/&md_id=` 查询形式，
+以及裸数字（按 `season_id` 处理）。识别不了 → 502 `无法识别的 B 站地址…`。
+
+`POST /api/bili/import`，body `{ animeId, url }`（两者均必填）。落库动作：
+
+1. 章节：id `{animeId}-bili-ss{seasonId}`，标题取 `seasonTitle`（B 站的 `subtitle` 字段是"已观看 xxx 次"这类统计文案，**不能**当标题）。已存在则复用。
+2. 剧集：每集一行，主键直接用 `ep{epId}`（B 站 ep 号全局唯一），标题 `{epNo}. {name}`（`name` 取 `long_title`，B 站的 `title` 只是裸集号），
+   `sourceUrl` 存 **B 站官方页 `share_url`**，`isFree` 恒为 `true`（这只是官方入口，不该被本站虚拟货币挡住），`sort` 按集序。
+   已存在的 `ep*` 行跳过，返回体里的 `skipped` 即跳过数——重复导入安全。
+3. 外链：把 `https://www.bilibili.com/bangumi/play/ss{seasonId}` 追加进 `anime.externalLinks`（已存在同 URL 则不加，上限 10 条），详情页因此出现「Bilibili 番剧」入口。
+
+成功 `message` 形如 `导入 魔偶马戏团：新增 37 集，跳过 0 集（已存在）`。
+
+失败：403 `需要管理员权限`；400 zod 文案；404 `动漫不存在`；502 B 站异常文案（`B 站返回异常：{message}（code {code}）`）、`该番剧没有可用分集`、`B 站接口请求失败或超时`。
+
+**边界**：本接口只取 B 站的**元数据与官方页地址**，不调用 `playurl` 取流、不存储也不代理任何视频地址。
+站内播放走 B 站官方外链播放器（`player.bilibili.com/player.html?is_bangumi=1&ep=…`，实测番剧只给试看片段），
+整集由播放页的「在官方站看完整版」按钮在用户自己的账号里观看。
 
 ---
 

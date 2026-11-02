@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import CommentSection from '@/components/site/CommentSection';
+import ProgressControl from '@/components/site/ProgressControl';
 import VideoPlayer from '@/components/site/VideoPlayer';
 import ViewTracker from '@/components/site/ViewTracker';
 import { getCurrentUser } from '@/lib/auth';
 import { formatDuration } from '@/lib/format';
-import { streamingLinks } from '@/lib/media';
-import { getPlayback, hasBought, listComments } from '@/lib/queries';
+import { officialPage, resolveMedia, streamingLinks } from '@/lib/media';
+import { getPlayback, getProgress, hasBought, listComments } from '@/lib/queries';
 
 export const metadata = { title: '在线播放' };
 
@@ -22,7 +23,13 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const canPlay = anime.price === 0 || video.isFree || bought;
   if (!canPlay) redirect(`/anime/${anime.id}`);
 
-  const comments = await listComments(anime.id);
+  const [comments, progress] = await Promise.all([
+    listComments(anime.id),
+    user ? getProgress(user.id, anime.id) : Promise.resolve(null),
+  ]);
+  const resumeSec = progress && progress.videoId === video.id ? progress.positionSec : 0;
+  const mediaKind = resolveMedia(video.sourceUrl).kind;
+  const watchPage = officialPage(video.sourceUrl);
 
   return (
     <div style={{ backgroundColor: '#0b0f14', paddingBottom: 30 }}>
@@ -42,11 +49,31 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         <div className="c-infor-box">
           <article className="fl col-7">
             <section className="mr30">
-              <VideoPlayer src={video.sourceUrl} title={`${anime.title} ${video.title}`} />
+              <VideoPlayer
+                src={video.sourceUrl}
+                title={`${anime.title} ${video.title}`}
+                animeId={anime.id}
+                videoId={video.id}
+                resumeSec={resumeSec}
+                track={Boolean(user)}
+              />
+              <ProgressControl
+                animeId={anime.id}
+                videoId={video.id}
+                initialSec={progress?.videoId === video.id ? progress.positionSec : 0}
+                auto={mediaKind === 'file'}
+                loggedIn={Boolean(user)}
+              />
               <div style={{ padding: '12px 0' }}>
-                <p className="c-999" style={{ fontSize: 12, lineHeight: 1.8 }}>
+                {watchPage && (
+                  <a href={watchPage} target="_blank" rel="noreferrer" className="comm-btn c-btn-3" style={{ padding: '6px 16px' }}>
+                    在官方站看完整版
+                  </a>
+                )}
+                <p className="c-999" style={{ fontSize: 12, lineHeight: 1.8, marginTop: 10 }}>
                   当前资源位：{video.title}。本站只挂载该作品自己公开的官方预告 / 正版嵌入源，不提供未授权的全集片源；
-                  完整版请走下方官方渠道。管理员可在后台「剧集」里为每一集填入已授权的正版源地址。
+                  B 站番剧的外链播放器只放试看片段，整集请用上方按钮在你自己的会员账号里观看。
+                  管理员可在后台「剧集」里为每一集填入已授权的正版源地址。
                 </p>
                 {official.length > 0 && (
                   <p style={{ marginTop: 8 }}>

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const LINKS = [
   { href: '/admin', label: '数据概览' },
   { href: '/admin/import', label: 'AniList 导入' },
+  { href: '/admin/bili', label: 'B 站分集导入' },
   { href: '/admin/anime', label: '动漫' },
   { href: '/admin/chapters', label: '章节' },
   { href: '/admin/videos', label: '剧集' },

@@ -111,7 +111,18 @@ CREATE TABLE IF NOT EXISTS "smsCodes" (
   "createdAt" TEXT NOT NULL,
   "used" INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS "watchProgress" (
+  "id" TEXT PRIMARY KEY NOT NULL,
+  "userId" TEXT NOT NULL,
+  "animeId" TEXT NOT NULL,
+  "videoId" TEXT NOT NULL,
+  "positionSec" INTEGER NOT NULL DEFAULT 0,
+  "durationSec" INTEGER NOT NULL DEFAULT 0,
+  "updatedAt" TEXT NOT NULL
+);
 CREATE UNIQUE INDEX IF NOT EXISTS "favorites_user_anime_idx" ON "favorites" ("userId","animeId");
+CREATE UNIQUE INDEX IF NOT EXISTS "watch_progress_user_anime_idx" ON "watchProgress" ("userId","animeId");
+CREATE INDEX IF NOT EXISTS "watch_progress_user_idx" ON "watchProgress" ("userId","updatedAt");
 CREATE INDEX IF NOT EXISTS "anime_category_idx" ON "anime" ("categoryId");
 CREATE INDEX IF NOT EXISTS "anime_maker_idx" ON "anime" ("makerId");
 CREATE INDEX IF NOT EXISTS "chapters_anime_idx" ON "chapters" ("animeId");

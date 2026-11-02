@@ -2,6 +2,26 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 格式，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.4.0] - 2026-11-02
+
+### 新增
+
+- **B 站分集导入**（`lib/bili.ts`、`app/api/bili/import/route.ts`、后台「B 站分集导入」页 `/admin/bili`）：
+  粘贴 `…/bangumi/play/ep…`、`ss…`、`md…` 任一形式，调 B 站公开接口 `pgc/view/web/season`（实测免登录、免 cookie）
+  取回真实分集：ep_id、集序、`long_title` 集名、时长（上游是毫秒，已换算）、官方页 URL。先预览再导入，
+  主键用全局唯一的 `ep{epId}`，重复导入自动跳过。同时把番剧官方页追加进详情页外链。
+  **只取元数据与官方页地址**：不调 `playurl` 取流、不存储也不代理任何视频地址。
+- 播放器支持 B 站番剧官方外链嵌入：`resolveMedia()` 把 `/bangumi/play/epNNN` 归一为
+  `player.bilibili.com/player.html?is_bangumi=1&ep=NNN`；实测该外链播放器对番剧只给试看片段（约 17 秒），
+  因此播放页新增「在官方站看完整版」按钮（由 `officialPage()` 反推官方页），整集在用户自己的账号里观看。
+- **观看进度**：新增 `watchProgress` 表（`(userId, animeId)` 唯一，只留最后看到的一集与秒数）、`/api/progress`（GET 列表 / POST 上报）、
+  `components/site/ProgressControl.tsx`。mp4/HLS 直链源每 15 秒 `sendBeacon` 自动上报并在下次打开自动 seek；
+  跨域嵌入源读不到播放位置，改为 `mm:ss` 手记。详情页出现「继续观看 {集名} · {mm:ss}」。
+
+### 变更
+
+- 后台导航新增「B 站分集导入」；`docs/API.md` 补 3.6 与 4.5 两节（接口数 24 → 28）。
+
 ## [2.3.0] - 2026-10-30
 
 ### 变更

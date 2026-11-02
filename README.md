@@ -47,7 +47,9 @@ npm run dev          # http://localhost:3000，首次启动自动建表并写入
 
 * **AniList GraphQL**（`lib/anilist.ts`）：首页「本季新番」实时榜单、后台搜索与导入。取回标题、封面、横幅、集数、评分、标签、制作公司、YouTube 预告片、`externalLinks` 里的官方观看渠道（Crunchyroll / Bilibili / Netflix 等），详情页直接展示为「官方资源」。请求带超时与重试，失败时降级为本地数据。
 * **Bangumi**（`lib/bangumi.ts`）：导入时用罗马音/日文标题检索条目，补中文名与中文简介。种子数据里的 16 部番（葬送的芙莉莲、进击的巨人、咒术回战、你的名字。、空之境界…）的中文标题与简介均来自这两个接口。
-* **播放器资源位**（`lib/media.ts`）：`videos.sourceUrl` 支持四类地址——B 站视频/番剧页（自动转 `player.bilibili.com` 官方嵌入）、YouTube 分享或嵌入地址（转 `youtube-nocookie`）、Dailymotion、以及 mp4 / HLS 直链（HLS 按需加载 `hls.js`）。种子数据里每部番只挂**它自己的官方预告 / PV**（取自 AniList `trailer`），不再塞无关的公开测试流。本站不内置、也不代找未授权的全集片源；要按集挂正版，请在后台「剧集」里逐集填入你已获授权的地址。
+* **B 站公开接口**（`lib/bili.ts`）：后台「B 站分集导入」粘贴番剧链接（`ep…` / `ss…` / `md…`）即可取回真实分集——ep_id、集序、`long_title` 集名、时长、官方页 URL，免登录免 cookie。只取元数据与官方页地址：不调 `playurl` 取流、不存储也不代理视频地址。
+* **播放器资源位**（`lib/media.ts`）：`videos.sourceUrl` 支持四类地址——B 站视频/番剧页（自动转 `player.bilibili.com` 官方嵌入）、YouTube 分享或嵌入地址（转 `youtube-nocookie`）、Dailymotion、以及 mp4 / HLS 直链（HLS 按需加载 `hls.js`）。种子数据里每部番只挂**它自己的官方预告 / PV**（取自 AniList `trailer`）。B 站番剧的外链播放器实测只放试看片段，整集由播放页「在官方站看完整版」跳回你自己的账号。本站不内置、也不代找未授权的全集片源。
+* **观看进度**（`watchProgress` 表 + `/api/progress`）：每部番记住最后看到的一集与秒数，详情页给出「继续观看」。直链源每 15 秒自动上报并续播；嵌入源因跨域读不到播放位置，提供 `mm:ss` 手记。
 
 ## 目录结构
 
@@ -55,12 +57,12 @@ npm run dev          # http://localhost:3000，首次启动自动建表并写入
 app/
   (site)/        首页、/anime 列表与详情、/player、/maker、/ucenter、/order
   (auth)/        /login、/register（沿用原站 sign.css 视觉）
-  admin/         后台：概览、AniList 导入、各资源 CRUD
-  api/           REST 接口（auth / favorites / comments / orders / views / anilist / admin）
+  admin/         后台：概览、AniList 导入、B 站分集导入、各资源 CRUD
+  api/           REST 接口（auth / favorites / comments / orders / views / progress / anilist / bili / admin）
   sitemap.ts     /sitemap.xml（公开条目 + lastModified，每小时重新验证）
   robots.ts      /robots.txt（屏蔽 /admin /ucenter /order /api）
 components/      site 与 admin 组件
-lib/             db(schema/ddl/seed)、queries、auth、anilist、bangumi、admin-resources、media、site、genres
+lib/             db(schema/ddl/seed)、queries、auth、anilist、bangumi、bili、admin-resources、media、site、genres
 public/assets/   原站 CSS / 图片 / 字体（保持原有视觉）+ responsive.css（窄屏覆盖）
 docs/API.md      全部 REST 接口的参数、响应示例与错误码
 ```
