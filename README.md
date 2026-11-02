@@ -7,7 +7,7 @@
 原有的 Java 后端、Nuxt 前台、Vue 后台代码保留在 `er_ci_yuan/`、`er_ci_yuan_site/`、`er_ci_yuan_front/` 目录，仅作参考，不参与新应用构建。
 
 > 在线演示：<https://erciYuan.fuwari.fun>（备用域名 <https://erciyuan-seven.vercel.app>）
-> 未绑定 Turso，运行在内存库上：冷启动会重建种子数据，新写入不持久；登录见下方演示账号。
+> 线上实例未绑定持久库（可绑 D1 或 Turso），运行在内存库上：冷启动会重建种子数据，新写入不持久；登录见下方演示账号。
 
 ## 快速开始
 
@@ -34,7 +34,7 @@ npm run dev          # http://localhost:3000，首次启动自动建表并写入
 | 运行时 | Spring Cloud 微服务 + Nacos + Sentinel + Gateway | Next.js 15 App Router（Server Components + Route Handlers），单应用 |
 | 前台 | Nuxt 2 + element-ui + DPlayer | React 19 + 原站 CSS（`public/assets`）+ hls.js 播放器 |
 | 后台 | Vue 2 + vue-element-admin | Next.js + Tailwind（关闭 preflight，避免污染原站样式） |
-| 数据库 | MySQL 5.7 + MyBatis Plus | LibSQL / Turso + Drizzle ORM，启动时自动建表与种子 |
+| 数据库 | MySQL 5.7 + MyBatis Plus | LibSQL / Turso / Cloudflare D1 + Drizzle ORM，启动时自动建表与种子 |
 | 缓存 | Redis | AniList 查询走 Next 数据缓存（`revalidate`），会话为无状态 JWT |
 | 鉴权 | Spring Security + JWT + Redis refresh | `jose` 签发 HS256 JWT，httpOnly Cookie，服务端 `requireUser` / `requireAdmin` |
 | 视频 | 阿里云 VOD 转码播放地址 | 资源位存 `videos.sourceUrl`，支持 B 站 / YouTube / Dailymotion 官方嵌入与 mp4 / HLS 直链；种子只挂各作品官方预告 |
@@ -81,13 +81,23 @@ docs/API.md      全部 REST 接口的参数、响应示例与错误码
 
 > **不配数据库会怎样**：Vercel 上每个路由是独立的函数实例，`DATABASE_URL` 缺失时各自持有一份内存库，
 > 因此「在 `/api/xxx` 写入、在另一个页面读取」会看不到对方的数据，实例回收后数据也会消失。
-> 站点顶部会显示演示模式提示。要正常收藏/评论/下单，请绑定 Turso（免费额度即可），无需迁移。
+> 站点顶部会显示演示模式提示。要正常收藏/评论/下单，请绑定 D1 或 Turso（免费额度即可），无需迁移。
 
 1. Fork / 推送本仓库，在 Vercel 导入（框架会被识别为 Next.js，无需额外配置）。
-2. 绑定一个 Turso（或任意 LibSQL）实例，否则每次实例冷启动都会用内存库重建种子数据，用户写入不持久：
-   * `DATABASE_URL=libsql://xxx.turso.io`
-   * `DATABASE_AUTH_TOKEN=...`
-   首次连接会自动执行建表 DDL 并写入种子数据，不需要跑迁移。
+2. 绑定一个持久库，否则每次实例冷启动都会用内存库重建种子数据，用户写入不持久。两种任选：
+   * **Cloudflare D1**：在 Cloudflare 后台「My Profile → API Tokens」建一个权限为 `Account / D1 / Edit` 的 Token，
+     再用它取 Account ID 并建库：
+     ```bash
+     curl -H "Authorization: Bearer $CF_TOKEN" https://api.cloudflare.com/client/v4/accounts
+     curl -X POST -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" \
+          -d '{"name":"erciyuan"}' \
+          https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/d1/database
+     ```
+     然后配 `DATABASE_URL=d1://$ACCOUNT_ID/$DATABASE_UUID`（第二条命令返回的 `result.uuid`）、
+     `DATABASE_AUTH_TOKEN=$CF_TOKEN`。D1 只提供 HTTP 接口，而 `drizzle-orm` 自带的 D1 驱动只能跑在 Workers binding 上，
+     所以本项目自带一个 REST 适配器 `lib/db/d1.ts`，Vercel 的 Node 运行时可直接用。
+   * **Turso / 任意 LibSQL 实例**：`DATABASE_URL=libsql://xxx.turso.io`、`DATABASE_AUTH_TOKEN=...`
+     首次连接会自动执行建表 DDL 并写入种子数据，不需要跑迁移。
 3. 设置 `AUTH_SECRET`（随机长字符串）。生产环境未设置时 JWT 会退回内置占位密钥，务必改掉。
 4. 可选 `DEMO_SMS=1` 保留演示验证码；不设置则注册接口只报「已发送」，需要自行接入短信通道。
 5. 可选 `BANGUMI_API_BASE` 指向可访问的镜像；大陆网络直连 `api.bgm.tv` 受阻时，导入会退回 AniList 的英文标题与简介。

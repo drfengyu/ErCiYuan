@@ -2,6 +2,49 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 格式，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.5.0] - 2026-11-02
+
+### 新增
+
+- **Cloudflare D1 持久化**（`lib/db/d1.ts`）：配 `DATABASE_URL=d1://<account_id>/<database_uuid>` 与
+  `DATABASE_AUTH_TOKEN=<Cloudflare API Token>` 即可把站点接到 D1，收藏 / 评论 / 下单 / 观看进度都能跨实例落库。
+  `drizzle-orm@0.45.4` 只有跑在 Workers binding 上的 D1 驱动（`drizzle-orm/d1`），没有能从 Vercel Node 运行时访问
+  D1 的 HTTP 驱动，npm 上也找不到可信现成包，所以按 D1 的 REST 契约
+  （`POST /client/v4/accounts/{account_id}/d1/database/{database_id}/query`，body 为 `{sql, params}` 或 `{batch}`）
+  写了一个与 `@libsql/client` 的 `Client` 形状兼容的适配器：`execute` 走单条、`batch` 走 `{batch:[…]}`（D1 侧按事务执行）、
+  `executeMultiple` 先把多语句 DDL 按分号切句（跳过引号内的分号）再一次批量发送。
+- D1 的行对象补齐数字下标与 `length`。drizzle 对表查询按**位置**映射列（`Array.prototype.slice.call(row)`），
+  libsql 的行同时具备具名键和下标，而 D1 返回纯 JSON 对象；不透传这层形状时每一列都会被映射成 `undefined`
+  （表现为 `/api/auth/me` 返回空对象、首页番剧标题全空、详情页 `formatMoney` 抛 `toFixed` 错误）。
+- 参数按 D1 的接受范围归一：`boolean → 1/0`、`undefined → null`、`Date → ISO 字符串`、`bigint → 字符串`
+  （D1 对 boolean 参数直接报 `INVALID_PARAMS_TYPES`）。
+- 可选 `D1_API_BASE_URL` 覆盖 API 根地址，默认 `https://api.cloudflare.com/client/v4`，用于本地联调。
+- **按 D1 的 100 绑定参数上限改造写入与批量读取**（上限来自 D1 平台限制页，`lib/db/d1.ts` 里导出为
+  `D1_MAX_BOUND_PARAMS`）：`lib/db/seed.ts` 的多行 `INSERT` 改成按列数反推每批行数（16 部番 × 26 列会被拆成
+  每批 3 行），`lib/queries.ts` 新增 `selectByIds()`，让 `inArray()` 的个人列表（收藏 / 订单 / 关系加载）
+  在 ID 超过 100 个时自动分批。LibSQL / Turso 走同样的分批，行为一致。
+
+### 变更
+
+- `lib/db/index.ts` 的 `resolveUrl()` 换成判别联合 `resolveSource()`：D1 分支缺 `DATABASE_AUTH_TOKEN` 时直接抛中文错误，
+  Token 无效时请求失败会把 D1 的原始错误抛到页面（500），不再出现「连不上库却静默退回内存库」这种最难查的失败形态。
+  Turso / LibSQL / 本地 `file:` / Vercel 内存库四条路径的行为不变。
+- 部署文档（README「部署到 Vercel」、`.env.example`）补上 D1 建库与取 Account ID 的 `curl` 命令，
+  并把「不配库会怎样」的说明从只提 Turso 改为 D1 / Turso 任选。
+
+### 验证
+
+本地用一个按 D1 HTTP 契约回话、底层是真 SQLite、并且**同样强制 100 绑定参数 / 100 KB 语句长度上限**的假端点跑通全链路：
+建表与种子（16 部番 / 16 章 / 15 条剧集 / 10 分类 / 10 制作 / 4 评论 / 2 收藏 / 1 订单 / 4 广告）全部经由 D1 协议写入，
+整轮下来 113 次请求、`maxParams` 恰好 100、被拒 0 次；给同一账号塞 120 条收藏后 `/ucenter/collect` 仍 200
+（`selectByIds` 拆成两批）；评论 / 收藏 / 下单 / 进度写入后**换掉整个应用进程**（先确认端口无监听）仍全部读回
+（`positionSec:421`、后台 `playCount:98765` 均在），中文不乱码；`/api/admin/*` 的列表 / 过滤
+（`published=true&year=2021`）/ PUT / POST / DELETE 正常且 `users` 仍不回显 `password`。
+对照组不设 `DATABASE_URL`（Vercel 内存库）时同样的重启会让账号消失，说明这条测试确实有鉴别力。
+错 Token 场景返回 `D1 请求失败：Invalid API Token`，`tsc --noEmit` 与 `next build` 均通过。
+未做的是真实 Cloudflare 账号上的端到端——`wrangler` 的 OAuth token 已过期且本机非交互环境无法完成登录，
+需要一次性给一个 `Account / D1 / Edit` 权限的 API Token。
+
 ## [2.4.0] - 2026-11-02
 
 ### 新增

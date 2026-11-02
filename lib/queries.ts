@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { and, asc, count, desc, eq, inArray, like, or, sql } from 'drizzle-orm';
 import { getDb } from './db';
+import { D1_MAX_BOUND_PARAMS } from './db/d1';
 import * as t from './db/schema';
 import { parseJson } from './format';
 import type { Anime, Category, Comment, Maker, User, Video } from './db/schema';
@@ -24,18 +25,23 @@ function decorate(row: Anime, maker?: Maker, category?: Category): AnimeView {
   };
 }
 
+/** Cloudflare D1 单条查询最多绑定 100 个参数，长 ID 列表要分批取 */
+async function selectByIds<Row>(ids: string[], run: (part: string[]) => PromiseLike<Row[]>): Promise<Row[]> {
+  const out: Row[] = [];
+  for (let i = 0; i < ids.length; i += D1_MAX_BOUND_PARAMS) {
+    out.push(...(await run(ids.slice(i, i + D1_MAX_BOUND_PARAMS))));
+  }
+  return out;
+}
+
 async function withRelations(rows: Anime[]) {
   if (rows.length === 0) return [];
   const { db } = await getDb();
   const makerIds = [...new Set(rows.map((r) => r.makerId).filter(Boolean))];
   const categoryIds = [...new Set(rows.map((r) => r.categoryId).filter(Boolean))];
   const [makerRows, categoryRows] = await Promise.all([
-    makerIds.length
-      ? db.select().from(t.makers).where(inArray(t.makers.id, makerIds))
-      : Promise.resolve([] as Maker[]),
-    categoryIds.length
-      ? db.select().from(t.categories).where(inArray(t.categories.id, categoryIds))
-      : Promise.resolve([] as Category[]),
+    selectByIds(makerIds, (part) => db.select().from(t.makers).where(inArray(t.makers.id, part))),
+    selectByIds(categoryIds, (part) => db.select().from(t.categories).where(inArray(t.categories.id, part))),
   ]);
   const makerMap = new Map(makerRows.map((m) => [m.id, m]));
   const categoryMap = new Map(categoryRows.map((c) => [c.id, c]));
@@ -279,14 +285,17 @@ export async function isFavorite(userId: string, animeId: string) {
 export async function listFavorites(userId: string) {
   const { db } = await getDb();
   const rows = await db.select().from(t.favorites).where(eq(t.favorites.userId, userId)).orderBy(desc(t.favorites.createdAt));
-  const animeRows = await db.select().from(t.anime).where(inArray(t.anime.id, rows.map((r) => r.animeId)));
+  const animeRows = await selectByIds(rows.map((r) => r.animeId), (part) => db.select().from(t.anime).where(inArray(t.anime.id, part)));
   return withRelations(animeRows);
 }
 
 export async function listUserOrders(userId: string) {
   const { db } = await getDb();
   const rows = await db.select().from(t.orders).where(eq(t.orders.userId, userId)).orderBy(desc(t.orders.createdAt));
-  const animeRows = await db.select().from(t.anime).where(inArray(t.anime.id, [...new Set(rows.map((r) => r.animeId))]));
+  const animeRows = await selectByIds(
+    [...new Set(rows.map((r) => r.animeId))],
+    (part) => db.select().from(t.anime).where(inArray(t.anime.id, part)),
+  );
   const map = new Map(animeRows.map((a) => [a.id, a]));
   return rows.map((o) => ({ ...o, animeTitle: map.get(o.animeId)?.title ?? o.animeId }));
 }
